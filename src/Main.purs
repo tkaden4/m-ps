@@ -20,7 +20,6 @@ import Parse
 import Prelude
 import Special
 import Tree
-
 import Data.Array as Array
 import Data.Char.Unicode (isSpace)
 import Data.Map (Map)
@@ -43,34 +42,42 @@ unwords = joinWith " "
 
 break :: String -> Tuple String String
 break s =
-  let prefix = takeWhile (not isSpace) s in
-  let postfix = drop (length prefix) s in
-  (Tuple prefix postfix)
+  let
+    prefix = takeWhile (not isSpace) s
+  in
+    let
+      postfix = drop (length prefix) s
+    in
+      (Tuple prefix postfix)
 
 loop :: Interface -> StateT Env Effect Unit
 loop interface = do
   current <- get
   liftEffect $ question "M> " (handleLine current) interface
   where
-    runLine :: String -> StateT Env Effect Unit
-    runLine line = do
-        env' <- get
-        tryEnv <- liftEffect (try $ process line env' :: Effect (Either Exception.Error Env))
-        case tryEnv of
-          Left e -> liftEffect (log (show e))
-          Right newEnv -> (put newEnv)
-    handleLine :: Env -> String -> Effect Unit
-    handleLine old line = do
-      newState <- execStateT (runLine line)  old
-      evalStateT (loop interface) newState
+  runLine :: String -> StateT Env Effect Unit
+  runLine line = do
+    env' <- get
+    tryEnv <- liftEffect (try $ process line env' :: Effect (Either Exception.Error Env))
+    case tryEnv of
+      Left e -> liftEffect (log (show e))
+      Right newEnv -> (put newEnv)
 
-
+  handleLine :: Env -> String -> Effect Unit
+  handleLine old line = do
+    newState <- execStateT (runLine line) old
+    evalStateT (loop interface) newState
 
 process :: String -> Env -> Effect Env
 process line env =
-  let without = drop 1 line in 
-  let (Tuple command rest) = break without in 
-  runCommand command rest env
+  let
+    without = drop 1 line
+  in
+    let
+      (Tuple command rest) = break without
+    in
+      runCommand command rest env
+
 process line env = runEvalCommand line env
 
 -- mComplete :: CompletionFunc (StateT Env Effect)
@@ -81,15 +88,15 @@ process line env = runEvalCommand line env
 --     get
 --       <&> \(Env env) ->
 --           map simpleCompletion $ sort $ filter (isPrefixOf symbol) (Map.keys env)
-
 basicIO :: Input
-basicIO = Input {
-  -- FIXME input
-  getChar: Stream.readString stdin (Just 1) UTF8 <#> fromMaybe "" <#> charAt 0, 
-  putChar: \c -> void $ Stream.writeString stdout UTF8 (singleton c) (pure unit)
-}
+basicIO =
+  Input
+    { -- FIXME input
+    getChar: Stream.readString stdin (Just 1) UTF8 <#> fromMaybe "" <#> charAt 0
+    , putChar: \c -> void $ Stream.writeString stdout UTF8 (singleton c) (pure unit)
+    }
 
-main ::  Effect Unit
+main :: Effect Unit
 main = do
   interface <- createConsoleInterface noCompletion
   args <- argv <#> Array.drop 1

@@ -26,7 +26,6 @@ import Node.FS.Sync
 import Parse
 import Prelude
 import Tree
-
 import Data.Map as Map
 import Data.String (Pattern(..), split)
 import Effect.Class.Console (logShow)
@@ -37,7 +36,7 @@ import Node.Path as Path
 import Text.Parsing.Parser (ParseError)
 
 listDirectory :: FilePath -> Effect (Array FilePath)
-listDirectory = readdir 
+listDirectory = readdir
 
 doesDirectoryExist :: FilePath -> Effect Boolean
 doesDirectoryExist path = do
@@ -49,9 +48,13 @@ words = split (Pattern " ")
 
 runCommand :: String -> String -> Env -> Effect Env
 runCommand "parse" rest env = runParseCommand rest env
+
 runCommand "eval" rest env = runEvalCommand rest env
+
 runCommand "load-parse" rest env = runLoadParseCommand rest env
+
 runCommand "load" rest env = runLoadCommand rest env
+
 runCommand name _ env = log ("Unrecognized command " <> name) *> pure env
 
 runParseCommand :: String -> Env -> Effect Env
@@ -97,7 +100,7 @@ parseFile name =
     >>= \x -> case x of
         true -> do
           names <- listDirectory name
-          parseFiles $ fromFoldable $ map (\sub -> Path.concat [sub, name]) names
+          parseFiles $ fromFoldable $ map (\sub -> Path.concat [ sub, name ]) names
         false -> do
           chars <- readTextFile UTF8 name
           pure $ parseProgram name chars
@@ -118,6 +121,7 @@ runDefault a maybeT = runMaybeT maybeT <#> fromMaybe a
 
 runProcess :: Env -> Process -> MaybeT Effect (EvalResult Value)
 runProcess env (Impure a) = lift $ pure <$> a
+
 runProcess env (Do process fn) = do
   value <- runProcess env process
   proc <- pure $ value >>= fn
